@@ -1,42 +1,55 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from "next/server";
 
-const SYSTEM_PROMPT = `You are a financial planner. Calculate the ideal emergency fund target, recommend monthly savings rate, suggest high-yield accounts, and outline withdrawal strategies.`;
-
-async function getClient() {
-  if (!process.env.DEEPSEEK_API_KEY) {
-    throw new Error('Missing DEEPSEEK_API_KEY environment variable');
-  }
-  const { default: OpenAI } = await import('openai');
-  return new OpenAI({
-    apiKey: process.env.DEEPSEEK_API_KEY,
-    baseURL: 'https://api.deepseek.com/v1',
-  });
-}
+const DEEPSEEK_API_URL = "https://api.deepseek.com/v1/chat/completions";
 
 export async function POST(req: NextRequest) {
   try {
-    const body = await req.json();
-    const client = await getClient();
-    const fieldList = ['monthly_expenses', 'income_stability', 'dependents', 'health_factors'];
-    const userMessage = fieldList
-      .map((f) => (body[f] ? f + ': ' + body[f] : null))
-      .filter(Boolean)
-      .join('\n');
+    const { fields, prompt } = await req.json();
 
-    const completion = await client.chat.completions.create({
-      model: 'deepseek-chat',
-      messages: [
-        { role: 'system', content: SYSTEM_PROMPT },
-        { role: 'user', content: 'Please generate based on the following inputs:\n\n' + userMessage },
-      ],
-      temperature: 0.7,
-      max_tokens: 800,
+    const fieldLines = Object.entries(fields)
+      .map(([key, value]) => `${key}: ${value ?? "N/A"}`)
+      .join("\n");
+
+    const messages = [
+      {
+        role: "system",
+        content: "You are a personal savings advisor. Calculate emergency fund targets based on expenses, create a milestone-based savings roadmap (0 to 1 month to 3 months to 6 months), suggest high-yield savings account strategies, and provide motivational milestone markers. Include tips for accelerating savings during windfalls.",
+      },
+      {
+        role: "user",
+        content: `${prompt}\n\n**Input Data:**\n${fieldLines}`,
+      },
+    ];
+
+    const apiKey = process.env.OPENAI_API_KEY;
+    if (!apiKey) {
+      return NextResponse.json({ error: "API key not configured" }, { status: 500 });
+    }
+
+    const response = await fetch(DEEPSEEK_API_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model: "deepseek-chat",
+        messages,
+        temperature: 0.7,
+        max_tokens: 2000,
+      }),
     });
 
-    const result = completion.choices[0]?.message?.content || 'No output generated.';
+    if (!response.ok) {
+      const err = await response.text();
+      return NextResponse.json({ error: `API error: ${err}` }, { status: 500 });
+    }
+
+    const data = await response.json();
+    const result = data.choices?.[0]?.message?.content || "";
+
     return NextResponse.json({ result });
-  } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : String(error);
-    return NextResponse.json({ error: message }, { status: 500 });
+  } catch (err) {
+    return NextResponse.json({ error: "Internal error" }, { status: 500 });
   }
 }

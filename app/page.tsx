@@ -1,129 +1,158 @@
-'use client'
+"use client";
 
-import React, { useState } from 'react';
+import { useState } from "react";
 
-export default function HomePage() {
-  const [form, setForm] = useState<Record<string, string>>({});
-  const [result, setResult] = useState('');
+export default function EmergencyFundPage() {
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [result, setResult] = useState("");
+  const [error, setError] = useState("");
 
-  const accentColor = "hsl(45, 80%, 50%)";
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    const { name, value } = e.target;
-    setForm(prev => ({ ...prev, [name]: value }));
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setLoading(true);
-    setError('');
-    setResult('');
+    setResult("");
+    setError("");
+
+    const formData = new FormData(e.currentTarget);
+    const fields: Record<string, string> = {};
+        fields["monthly_expenses"] = "";
+    fields["current_savings"] = "";
+    fields["monthly_income"] = "";
+    fields["savings_capacity"] = "";
+    fields["months_target"] = "";
+    fields["employment_stability"] = "";
+    formData.forEach((value, key) => {
+      fields[key] = value as string;
+    });
+
     try {
-      const res = await fetch('/api/generate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(form),
+      const res = await fetch("/api/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          fields,
+          prompt: "Generate a comprehensive financial report for this scenario. Respond in well-structured markdown.",
+        }),
       });
+
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Generation failed');
-      setResult(data.result || data.output || JSON.stringify(data));
-    } catch (err: any) {
-      setError(err.message);
+      if (data.result) {
+        setResult(data.result);
+      } else {
+        setError(data.error || "Generation failed");
+      }
+    } catch {
+      setError("Network error. Please try again.");
     } finally {
       setLoading(false);
     }
-  };
-
-  const textColor = 'rgba(255,255,255,0.85)';
+  }
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-6" style={{background: 'linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%)'}}>
-      <div className="w-full max-w-lg">
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold mb-2" style={{ color: accentColor }}>AI Emergency Fund Planner</h1>
-          <p className="text-sm" style={{ color: textColor }}>
-            Fill in the fields below and click Generate to get your personalized output.
-          </p>
+    <main className="min-h-screen bg-gradient-to-b from-gray-900 via-gray-950 to-gray-900 text-white">
+      <div className="container mx-auto px-4 py-12 max-w-4xl">
+        {/* Header */}
+        <div className="text-center mb-10">
+          <h1 className="text-4xl font-bold mb-3 bg-gradient-to-r from-teal-400 to-teal-600 bg-clip-text text-transparent">
+            AI Emergency Fund Goal Tracker & Savings Roadmap
+          </h1>
+          <p className="text-gray-400 text-lg">Create a personalized emergency fund savings roadmap with milestones, monthly targets, and windfall strategies.</p>
         </div>
 
-        <form onSubmit={handleSubmit} className="rounded-2xl p-6 border border-white/10 backdrop-blur-sm"
-          style={{ background: 'rgba(255,255,255,0.05)' }}>
-          <div>
-            <label htmlFor="monthly_expenses" className="block text-sm font-medium mb-1" style={{color: textColor}}>Monthly expenses ($)</label>
-            <input
-              id="monthly_expenses"
-              name="monthly_expenses"
-              type="text"
-              value={form["monthly_expenses"] || ""}
-              onChange={handleChange}
-              className="w-full rounded-lg px-4 py-2.5 text-sm bg-white/10 border border-white/20 placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-offset-1"
-              placeholder="Enter monthly expenses ($)"
-            />
-          </div>
-          <div>
-            <label htmlFor="income_stability" className="block text-sm font-medium mb-1" style={{color: textColor}}>Job income stability</label>
-            <input
-              id="income_stability"
-              name="income_stability"
-              type="text"
-              value={form["income_stability"] || ""}
-              onChange={handleChange}
-              className="w-full rounded-lg px-4 py-2.5 text-sm bg-white/10 border border-white/20 placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-offset-1"
-              placeholder="Enter job income stability"
-            />
-          </div>
-          <div>
-            <label htmlFor="dependents" className="block text-sm font-medium mb-1" style={{color: textColor}}>Number of dependents</label>
-            <input
-              id="dependents"
-              name="dependents"
-              type="text"
-              value={form["dependents"] || ""}
-              onChange={handleChange}
-              className="w-full rounded-lg px-4 py-2.5 text-sm bg-white/10 border border-white/20 placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-offset-1"
-              placeholder="Enter number of dependents"
-            />
-          </div>
-          <div>
-            <label htmlFor="health_factors" className="block text-sm font-medium mb-1" style={{color: textColor}}>Health/risk factors</label>
-            <input
-              id="health_factors"
-              name="health_factors"
-              type="text"
-              value={form["health_factors"] || ""}
-              onChange={handleChange}
-              className="w-full rounded-lg px-4 py-2.5 text-sm bg-white/10 border border-white/20 placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-offset-1"
-              placeholder="Enter health/risk factors"
-            />
+        {/* Form */}
+        <form onSubmit={handleSubmit} className="bg-gray-900/60 border border-gray-800 rounded-2xl p-8 mb-8 space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+        <label className="block text-sm font-medium text-gray-300 mb-1">Monthly Expenses</label>
+        <input
+          type="text"
+          name="monthly_expenses"
+          placeholder="Enter value..."
+          className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+        />
+      </div>
+      <div>
+        <label className="block text-sm font-medium text-gray-300 mb-1">Current Savings</label>
+        <input
+          type="text"
+          name="current_savings"
+          placeholder="Enter value..."
+          className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+        />
+      </div>
+      <div>
+        <label className="block text-sm font-medium text-gray-300 mb-1">Monthly Income</label>
+        <input
+          type="text"
+          name="monthly_income"
+          placeholder="Enter value..."
+          className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+        />
+      </div>
+      <div>
+        <label className="block text-sm font-medium text-gray-300 mb-1">Savings Capacity</label>
+        <input
+          type="text"
+          name="savings_capacity"
+          placeholder="Enter value..."
+          className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+        />
+      </div>
+      <div>
+        <label className="block text-sm font-medium text-gray-300 mb-1">Months Target</label>
+        <input
+          type="text"
+          name="months_target"
+          placeholder="Enter value..."
+          className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+        />
+      </div>
+      <div>
+        <label className="block text-sm font-medium text-gray-300 mb-1">Employment Stability</label>
+        <input
+          type="text"
+          name="employment_stability"
+          placeholder="Enter value..."
+          className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+        />
+      </div>
           </div>
 
           <button
             type="submit"
             disabled={loading}
-            className="w-full mt-6 rounded-xl py-3 font-semibold text-white transition-all hover:opacity-90 disabled:opacity-50"
-            style={{ background: accentColor }}
+            className={`w-full py-4 rounded-xl font-semibold text-lg transition-all
+              bg-gradient-to-r from-teal-600 to-teal-700 hover:from-teal-500 hover:to-teal-600
+              disabled:opacity-50 disabled:cursor-not-allowed
+              shadow-lg shadow-teal-900/30`}
           >
-            {loading ? 'Generating…' : 'Generate'}
+            {loading ? "Generating Report..." : "Generate Report"}
           </button>
-
-          {error && (
-            <div className="mt-4 p-3 rounded-lg text-sm text-red-300 bg-red-900/30 border border-red-500/30">
-              {error}
-            </div>
-          )}
         </form>
 
+        {error && (
+          <div className="bg-red-900/30 border border-red-800 rounded-xl p-4 mb-8 text-red-300 text-sm">
+            {error}
+          </div>
+        )}
+
         {result && (
-          <div className="mt-6 rounded-2xl p-6 border border-white/10 backdrop-blur-sm" style={{ background: 'rgba(255,255,255,0.05)' }}>
-            <h3 className="text-sm font-semibold mb-3" style={{ color: accentColor }}>Generated Output</h3>
-            <div className="text-sm whitespace-pre-wrap leading-relaxed" style={{ color: textColor }}>
-              {result}
+          <div className="bg-gray-900/60 border border-gray-800 rounded-2xl p-8">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-semibold text-teal-400">Generated Report</h2>
+              <button
+                onClick={() => navigator.clipboard.writeText(result)}
+                className="text-sm text-gray-400 hover:text-white px-3 py-1 rounded border border-gray-700 transition-colors"
+              >
+                Copy
+              </button>
             </div>
+            <pre className="whitespace-pre-wrap text-sm text-gray-200 font-mono leading-relaxed bg-gray-800/50 p-4 rounded-xl overflow-x-auto">
+              {result}
+            </pre>
           </div>
         )}
       </div>
-    </div>
+    </main>
   );
 }
